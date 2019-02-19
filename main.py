@@ -1,58 +1,89 @@
-import os
-import cv2
-from tkinter import *
-from PIL import Image, ImageTk
+import pygame
+import time
 
-class FullScreenWindow:
+black = (0,0,0)
+white = (255,255,255)
 
-    def __init__(self):
-        self.dir = os.path.dirname(__file__)
-        self.rel_path = "assets/background.jpg"
+pygame.init()
 
-        self.window = Tk()
-        self.window.geometry('350x200')
-        self.window.title('Hello Carbot')
-        self.window.configure(background='black')
+surfaceWidth = 800
+surfaceHeight = 400
 
-        # Background Setup
-        self.image = Image.open("assets/background.jpg")
-        self.image_copy= self.image.copy()
+surface = pygame.display.set_mode((surfaceWidth, surfaceHeight))
+pygame.display.set_caption('Helicopter')
+clock = pygame.time.Clock()
 
-        self.background_image = ImageTk.PhotoImage(self.image)
+img = pygame.image.load('helicopter.png')
 
-        self.background = Label(self.window, image=self.background_image)
-        self.background.pack(fill=BOTH, expand=YES)
-        self.background.bind('<Configure>', self._resize_image)
+def helicopter(x, y, image):
+    surface.blit(img, (x,y))
 
-        self.state = False
-        self.window.bind('<Return>', self.toggle_fullscreen)
-        self.window.bind('<Escape>', self.end_fullscreen)
+def gameOver():
+    msgSurface('Kaboom!')
 
-        self.window.attributes('-fullscreen', self.state)
+def replay_or_quit():
+    for event in pygame.event.get([pygame.KEYDOWN, pygame.KEYUP, pygame.QUIT]):
+        if event.type == pygame.QUIT:
+            pygame.quit()
+            quit()
+        elif event.type == pygame.KEYDOWN:
+            continue
+        return event.key
+    return None
+
+def makeTextObjs(text, font):
+    textSurface = font.render(text, True, black)
+    return textSurface, textSurface.get_rect()
+
+def msgSurface(text):
+    smallText = pygame.font.Font('freesansbold.ttf', 20)
+    largeText = pygame.font.Font('freesansbold.ttf', 150)
+
+    titleTextSurf, titleTextRect = makeTextObjs(text, largeText)
+    titleTextRect.center = surfaceWidth/2, surfaceHeight/2
+    surface.blit(titleTextSurf, titleTextRect)
+
+    typTextSurf, typTextRect = makeTextObjs('Press any key to continue', smallText)
+    typTextRect.center = surfaceWidth/2, ((surfaceHeight/2) + 100)
+    surface.blit(typTextSurf, typTextRect)
+
+    pygame.display.update()
+    time.sleep(0.5)
+
+    while replay_or_quit() == None:
+        clock.tick()
+        time.sleep(0.5)
+    main()
+
+def main():
+    x = 150
+    y = 100
+    y_move = 5
+
+    game_over = False
+
+    while not game_over:
+
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                game_over = True
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_UP:
+                    y_move = -5
+            if event.type == pygame.KEYUP:
+                if event.key == pygame.K_UP:
+                    y_move = 5
+        y += y_move
+        surface.fill(white)
+        helicopter(x, y, img)
+
+        if y > surfaceHeight-40 or y < 0:
+            gameOver()
+
+        pygame.display.update()
+        clock.tick(60)
 
 
-    def toggle_fullscreen(self, event=None):
-        self.state = not self.state
-        self.window.attributes('-fullscreen', self.state)
-        return 'break'
-
-    def end_fullscreen(self, event=None):
-        self.state = False
-        self.window.attributes('-fullscreen', False)
-        return 'break'
-    
-    def _resize_image(self, event):
-        new_width = event.width
-        new_height = event.height
-
-        self.image = self.image_copy.resize((new_width, new_height))
-
-        self.background_image = ImageTk.PhotoImage(self.image)
-        self.background.configure(image=self.background_image)
-
-
-
-if __name__ == '__main__':
-    w = FullScreenWindow()
-    w.window.mainloop()
-
+main()
+pygame.quit()
+quit()
